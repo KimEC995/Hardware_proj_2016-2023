@@ -1,0 +1,159 @@
+//Test Code
+
+//Arduino 
+
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+//Therm
+int ThermistorPin = A0;
+int Vo;
+float R1 = 10000;
+float logR2, R2, T, Tc;  
+float c1 = 1.009249522e-03, c2 = 2.378405444e-04, c3 = 2.019202697e-07;
+  
+
+//buf
+int speakerpin = 7;
+
+//about buf                //앞글자들은 바꾸지 말고 뒤 숫자만 바꿔야됨
+int SampleCount = 4;        //샘플링숫자.ex)4->4+1로 5회샘플작업하는거->0.5초측정
+double buf[5] = {0};        //샘플링숫자2.ex)5-> 5회샘플작업 -> 0.5초 측정
+int z;                      //건들지말것
+double WAmp = 15.0;           //비프가 울리는 조건 중 전류값. 최대 17
+int LAC = 1;                //건들지말것
+int WTemp = 50;             //비프가 울리는 조건 중 온도. 
+
+
+//전류센서AC
+const int sensorln = A1;
+int mVperAmp = 100;
+double Voltage = 0;
+double VRMS = 0;
+double AmpsRMS = 0;
+
+//LCD
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+
+  void setup(){
+
+    Serial.begin(9600);
+    Serial.println("CURRENT,TEMP");
+
+    //조건비프
+    pinMode(speakerpin, OUTPUT);
+    
+     //LCD
+    lcd.init();  //LCD초기화
+    lcd.backlight();
+
+}
+
+  void loop(){
+
+    //온도관련
+        Vo = analogRead(ThermistorPin);  
+        R2 = R1 * (1023.0 / (float)Vo - 1.0);  
+        logR2 = log(R2);  
+        T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2));  
+        Tc = T - 273.15;  
+
+    //AC전류관련
+    Voltage = getVPP();
+    VRMS = (Voltage/2.0)*0.707;
+    AmpsRMS = (VRMS*1000)/mVperAmp;
+             //Serial.print("MAX:");
+             //Serial.println(maxValue);
+             //Serial.print("MIN:");
+             //Serial.println(minValue);
+
+
+    //배열채우기
+        for (int r=0; r < SampleCount; r++)
+          {
+               buf[r] = buf[r+1];
+            }
+          buf[SampleCount] = AmpsRMS;
+
+
+    //조건비프
+    LAC = 1;
+        for (int z=0; z < SampleCount+1; z++)
+        {
+            if(buf[z] < WAmp)
+            {
+             LAC = 0; 
+            }
+        }
+                if (LAC == 1 || Tc >WTemp)
+                  {
+                    tone(speakerpin,500,1000);
+                    delay(100);
+                    tone(speakerpin,600,1000);
+                   }
+
+    //소수점 1자리
+          /*
+          //전류
+          char buffer[10] = {0};
+          sprintf(buffer, "%.1f", AmpsRMS);
+          //온도
+          char TEMP[10] = {0};
+          sprintf(TEMP, "%.1f", Tc);
+          위에꺼안됨*/
+          
+          //실수반올림
+          //int TcI = round(Tc);
+          //int AmpsRMSI = round(AmpsRMS);
+
+    //LCD 출력관련
+
+    Serial.print(AmpsRMS);
+    Serial.print(",");
+    Serial.println(Tc);
+
+    lcd.setCursor(0,0);
+    lcd.print("Current:");
+    lcd.print(AmpsRMS);    // 바로위에꺼
+    lcd.setCursor(0,1);
+    lcd.print("CNT:");
+    lcd.print(millis() / 1000);
+    lcd.setCursor(10,1);
+    lcd.print("Th:");
+    lcd.print(Tc);
+    //delay(10);
+  
+}
+
+    float getVPP()
+    {
+      float result;
+      
+      int readValue;
+      int maxValue = 0;
+      int minValue = 1024;
+
+
+      uint32_t start_time = millis();
+      
+      while((millis()-start_time) < 100)   //0.1초샘플링
+      {
+        readValue = analogRead(sensorln);
+          
+          if(readValue > maxValue)
+          {
+            maxValue = readValue;
+          }
+
+          if(readValue < minValue)
+          {
+            minValue = readValue;
+          }
+    } 
+
+      result = ((maxValue - minValue)*5.0)/1024.0;
+
+      return result;
+    }
