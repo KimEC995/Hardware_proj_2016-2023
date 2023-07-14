@@ -1,0 +1,29 @@
+const int stepPin = 4; 
+const int dirPin = 5; 
+ 
+void setup() {  
+pinMode ( stepPin, OUTPUT ) ;
+pinMode ( dirPin, OUTPUT ) ;
+}
+
+void loop() {  
+digitalWrite ( dirPin, HIGH ) ;
+// for one time rotate, make 200 pulse
+for ( int x = 0; x < 200; x ++ ) { 
+digitalWrite ( stepPin, HIGH ) ;
+delayMicroseconds ( 500 ) ;
+digitalWrite ( stepPin, LOW ) ;
+delayMicroseconds ( 500 ) ;
+}
+delay ( 1000 ) ; 
+ 
+digitalWrite ( dirPin, LOW ) ; 
+// for t time rotate, make 400 pulse
+for ( int x = 0; x < 400; x ++ ) { 
+digitalWrite ( stepPin, HIGH ) ;
+delayMicroseconds ( 500 ) ;
+digitalWrite ( stepPin, LOW ) ;
+delayMicroseconds ( 500 ) ;
+}
+delay ( 1000 ) ;
+}
