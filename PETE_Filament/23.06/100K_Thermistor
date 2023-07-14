@@ -1,0 +1,19 @@
+#include <thermistor.h>   //Donwload it here: https://electronoobs.com/eng_arduino_thermistor.php
+thermistor therm1(A1,0);  //Connect thermistor on A0, 0 represents TEMP_SENSOR_0 ( configuration.h for more)
+
+
+void setup() {
+  // put your setup code here, to run once: 
+  Serial.begin(9600); //initialize port serial at 9600 Bauds.
+}
+
+void loop() {
+  // All thermistor temperature is in degrade.
+  double temp1 = therm1.analog2temp(); // read temperature
+  
+  //Print temperature in port serial
+  //Serial.print("Thermistor temperature: "); 
+  Serial.println((String)temp1);
+  //Serial.print("----------------------");  
+  delay(200); //wait 200 mS for next measure
+}
